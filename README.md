@@ -1,5 +1,3 @@
-![ASL Gesture Recognition 🤟🧠📷](image.png)
-
 [🔗 Dataset Link (Kaggle)](https://www.kaggle.com/datasets/grassknoted/asl-alphabet)
 
 ---
