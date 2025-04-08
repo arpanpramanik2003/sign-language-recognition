@@ -36,5 +36,5 @@ The model is built using **TensorFlow** and the **Xception** architecture for hi
 
 ### 1️⃣ Clone the Repository  
 ```bash
-git clone https://github.com/arpanpramanik2003/sign language recognition.git  
-cd sign language recognition
+git clone https://github.com/arpanpramanik2003/sign-language-recognition.git  
+cd sign-language-recognition
