@@ -1,64 +1,70 @@
-import cv2
-import numpy as np
+import streamlit as st
 import tensorflow as tf
-import os
+import numpy as np
+import pandas as pd
+from PIL import Image
 import requests
+import os
 
-# Dropbox direct download link conversion
-dropbox_url = "https://www.dropbox.com/scl/fi/nmktcdiralyyqs8yld9jg/asl_gesture_model.keras?rlkey=c9jdf65bhpqlxfrc61ndo2k44&st=g2grghi1&dl=1"
-model_path = "asl_gesture_model.keras"
+# Set Streamlit page config
+st.set_page_config(page_title="ASL Gesture Classifier", layout="centered")
 
-# Download model from Dropbox if not already present
-if not os.path.exists(model_path):
-    print("Downloading model from Dropbox...")
-    response = requests.get(dropbox_url)
-    with open(model_path, 'wb') as f:
-        f.write(response.content)
-    print("Model downloaded successfully!")
+# Dropbox direct download link (replace this with your actual link)
+dropbox_url = "https://www.dropbox.com/scl/fi/nmktcdiralyyqs8yld9jg/asl_gesture_model.keras?rlkey=c9jdf65bhpqlxfrc61ndo2k44&st=211jzstc&dl=1"
+model_filename = "asl_gesture_model.keras"
 
-# Load the trained model
-model = tf.keras.models.load_model(model_path)
-print("Model loaded successfully")
+# Download model if not already present
+if not os.path.exists(model_filename):
+    with st.spinner("Downloading model..."):
+        r = requests.get(dropbox_url)
+        with open(model_filename, "wb") as f:
+            f.write(r.content)
+    st.success("Model downloaded successfully!")
 
-# Define class labels (29 classes from your ASL dataset)
+# Load the model
+model = tf.keras.models.load_model(model_filename)
+st.success("Model loaded successfully!")
+
+# Class labels (29)
 class_labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
                 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
                 'del', 'nothing', 'space']
 
-# Open webcam
-cap = cv2.VideoCapture(0)
-if not cap.isOpened():
-    print("Error: Could not open webcam.")
-    exit()
+# Title
+st.title("🤟 ASL Gesture Image Classifier")
 
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        print("Error: Could not read frame.")
-        break
+# Upload image
+uploaded_file = st.file_uploader("Upload an image of a hand showing an ASL gesture", type=["jpg", "jpeg", "png"])
 
-    # Preprocess frame (resize to 150x150, normalize)
-    img = cv2.resize(frame, (150, 150))
-    img_array = np.expand_dims(img, axis=0)
-    img_array = img_array / 255.0
+if uploaded_file:
+    image = Image.open(uploaded_file).convert('RGB')
+    
+    st.image(image, caption="Uploaded Image", width=300)
 
-    # Make prediction
-    predictions = model.predict(img_array)
-    predicted_class = np.argmax(predictions)
-    confidence = np.max(predictions) * 100  # Convert to percentage
+    # Preprocess image
+    image = image.resize((150, 150))
+    image_array = np.array(image) / 255.0
+    image_array = np.expand_dims(image_array, axis=0)
 
-    # Display label
-    label = f"Gesture: {class_labels[predicted_class]} ({confidence:.2f}%)"
-    cv2.putText(frame, label, (20, 50), cv2.FONT_HERSHEY_SIMPLEX,
-                1, (0, 255, 0), 2)
+    # Predict
+    prediction = model.predict(image_array)[0]
+    predicted_idx = np.argmax(prediction)
+    predicted_label = class_labels[predicted_idx]
+    confidence = prediction[predicted_idx] * 100
 
-    # Show frame
-    cv2.imshow('ASL Gesture Recognition', frame)
+    # Show prediction result
+    st.markdown(f"### 🧠 Predicted Gesture: `{predicted_label}`")
+    st.markdown(f"**Confidence:** `{confidence:.2f}%`")
 
-    # Exit on 'q'
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+    # Show top 5 predictions in a table
+    top_indices = prediction.argsort()[-5:][::-1]
+    top_labels = [class_labels[i] for i in top_indices]
+    top_confidences = [prediction[i] * 100 for i in top_indices]
 
-# Cleanup
-cap.release()
-cv2.destroyAllWindows()
+    df = pd.DataFrame({
+        'Class': top_labels,
+        'Confidence (%)': [f"{conf:.2f}" for conf in top_confidences]
+    })
+
+    st.markdown("### 🔍 Top 5 Predictions")
+    st.table(df)
