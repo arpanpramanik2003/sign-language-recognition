@@ -1,56 +1,64 @@
-import streamlit as st
-import tensorflow as tf
+import cv2
 import numpy as np
-import pandas as pd
-from PIL import Image
+import tensorflow as tf
+import os
+import requests
 
-# Set Streamlit page config
-st.set_page_config(page_title="ASL Gesture Classifier", layout="centered")
+# Dropbox direct download link conversion
+dropbox_url = "https://www.dropbox.com/scl/fi/nmktcdiralyyqs8yld9jg/asl_gesture_model.keras?rlkey=c9jdf65bhpqlxfrc61ndo2k44&st=y6xhz6jo&dl=1"
+model_path = "asl_gesture_model.keras"
 
-# Load the model
-model = tf.keras.models.load_model('asl_gesture_model.keras')
-st.success("Model loaded successfully!")
+# Download model from Dropbox if not already present
+if not os.path.exists(model_path):
+    print("Downloading model from Dropbox...")
+    response = requests.get(dropbox_url)
+    with open(model_path, 'wb') as f:
+        f.write(response.content)
+    print("Model downloaded successfully!")
 
-# Class labels (29)
+# Load the trained model
+model = tf.keras.models.load_model(model_path)
+print("Model loaded successfully")
+
+# Define class labels (29 classes from your ASL dataset)
 class_labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
                 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
                 'del', 'nothing', 'space']
 
-# Title
-st.title("🤟 ASL Gesture Image Classifier")
+# Open webcam
+cap = cv2.VideoCapture(0)
+if not cap.isOpened():
+    print("Error: Could not open webcam.")
+    exit()
 
-# Upload image
-uploaded_file = st.file_uploader("Upload an image of a hand showing an ASL gesture", type=["jpg", "jpeg", "png"])
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        print("Error: Could not read frame.")
+        break
 
-if uploaded_file:
-    image = Image.open(uploaded_file).convert('RGB')
-    
-    st.image(image, caption="Uploaded Image", width=300)
+    # Preprocess frame (resize to 150x150, normalize)
+    img = cv2.resize(frame, (150, 150))
+    img_array = np.expand_dims(img, axis=0)
+    img_array = img_array / 255.0
 
-    # Preprocess image
-    image = image.resize((150, 150))
-    image_array = np.array(image) / 255.0
-    image_array = np.expand_dims(image_array, axis=0)
+    # Make prediction
+    predictions = model.predict(img_array)
+    predicted_class = np.argmax(predictions)
+    confidence = np.max(predictions) * 100  # Convert to percentage
 
-    # Predict
-    prediction = model.predict(image_array)[0]
-    predicted_idx = np.argmax(prediction)
-    predicted_label = class_labels[predicted_idx]
-    confidence = prediction[predicted_idx] * 100
+    # Display label
+    label = f"Gesture: {class_labels[predicted_class]} ({confidence:.2f}%)"
+    cv2.putText(frame, label, (20, 50), cv2.FONT_HERSHEY_SIMPLEX,
+                1, (0, 255, 0), 2)
 
-    # Show prediction result
-    st.markdown(f"### 🧠 Predicted Gesture: `{predicted_label}`")
-    st.markdown(f"**Confidence:** `{confidence:.2f}%`")
+    # Show frame
+    cv2.imshow('ASL Gesture Recognition', frame)
 
-    # Show top 5 predictions in a table
-    top_indices = prediction.argsort()[-5:][::-1]
-    top_labels = [class_labels[i] for i in top_indices]
-    top_confidences = [prediction[i] * 100 for i in top_indices]
+    # Exit on 'q'
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
-    df = pd.DataFrame({
-        'Class': top_labels,
-        'Confidence (%)': [f"{conf:.2f}" for conf in top_confidences]
-    })
-
-    st.markdown("### 🔍 Top 5 Predictions")
-    st.table(df)
+# Cleanup
+cap.release()
+cv2.destroyAllWindows()
