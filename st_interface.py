@@ -5,7 +5,7 @@ import os
 import requests
 
 # Dropbox direct download link conversion
-dropbox_url = "https://www.dropbox.com/scl/fi/nmktcdiralyyqs8yld9jg/asl_gesture_model.keras?rlkey=c9jdf65bhpqlxfrc61ndo2k44&st=y6xhz6jo&dl=1"
+dropbox_url = "https://www.dropbox.com/scl/fi/nmktcdiralyyqs8yld9jg/asl_gesture_model.keras?rlkey=c9jdf65bhpqlxfrc61ndo2k44&st=g2grghi1&dl=1"
 model_path = "asl_gesture_model.keras"
 
 # Download model from Dropbox if not already present
