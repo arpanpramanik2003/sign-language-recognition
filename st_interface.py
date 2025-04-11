@@ -9,7 +9,7 @@ import os
 # Set Streamlit page config
 st.set_page_config(page_title="ASL Gesture Classifier", layout="centered")
 
-# Dropbox direct download link (replace this with your actual link)
+# Dropbox direct download link
 dropbox_url = "https://www.dropbox.com/scl/fi/nmktcdiralyyqs8yld9jg/asl_gesture_model.keras?rlkey=c9jdf65bhpqlxfrc61ndo2k44&st=211jzstc&dl=1"
 model_filename = "asl_gesture_model.keras"
 
