@@ -3,10 +3,10 @@ import numpy as np
 import tensorflow as tf
 
 # Load the trained model
-model = tf.keras.models.load_model(r'P:\Documents(p)\Python_Advance\ML Project\Sign_Language\asl_gesture_model.keras')
+model = tf.keras.models.load_model('asl_gesture_model.keras')
 print("Model loaded successfully")
 
-# Define class labels (29 classes from your ASL dataset)
+# Define class labels (29 classes from ASL dataset)
 class_labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 
                 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 
                 'del', 'nothing', 'space']
